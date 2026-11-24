@@ -252,7 +252,7 @@ enum RowId { kRenderResolution, kMaxFps, kVsync, kFpsCounter, kAniso, kAudioOutp
              kAntiAliasing, kFpsPosition, kFpsTemps, kStickMode, kBloom, kFog, kDonate, kGithub, kYoutube, kFpsUsage,
              kReflections, kParticles, kRain, kRainDrops, kShadows, kRoadReflections,
              kCheatNos, kCheatSpeedbreaker, kCheatCash, kCheatNoPolice, kCheatUnlockAll,
-             kSkipMovies, kYellowTint, kNightMode, kMotionBlur, kShaderPreload, kCheatDragShift, kCheatNoTraffic,
+             kSkipMovies, kYellowTint, kNightMode, kMotionBlur, kShaderPreload, kCheatDragShift, kCheatNoTraffic, kCheatAutoDriver,
              kTexturePacks, kTextureResolution };
 
 using rows::Kind;
@@ -316,6 +316,7 @@ constexpr Row kCheatRows[] = {
     {Kind::Value, kCheatUnlockAll, "UNLOCK ALL"},
     {Kind::Value, kCheatNoTraffic, "NO TRAFFIC"},
     {Kind::Value, kCheatDragShift, "AUTO SHIFT IN DRAG"},
+  {Kind::Value, kCheatAutoDriver, "AUTO DRIVER"},
 };
 
 // the credits' names, an info row's id; as they are, untranslated
@@ -391,6 +392,7 @@ bool* ToggleFlag(Settings& s, int id) {
         case kCheatNoPolice: return &o.cheat_no_police;
         case kCheatUnlockAll: return &o.cheat_unlock_all;
         case kCheatDragShift: return &o.cheat_drag_shift;
+    case kCheatAutoDriver: return &o.cheat_auto_driver;
         case kCheatNoTraffic: return &o.cheat_no_traffic;
         case kSkipMovies: return &o.skip_movies;
         default: return nullptr;

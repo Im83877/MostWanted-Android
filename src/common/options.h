@@ -57,6 +57,7 @@ struct Options {
     bool cheat_unlock_all = false;    // every car, part and race unlocked
     bool cheat_no_traffic = false;    // no traffic cars, src/game/game.cpp
     bool cheat_drag_shift = false;    // the gears shift by themselves in drag races, from the next race
+    bool cheat_auto_driver = false;  // auto driver follows the racing line, from the next race
     bool skip_movies = false;         // the movies end as they start, src/game/game.cpp
     uint32_t audio_output = 0;  // audio::kOutputAuto, kOutputStereo, kOutputSurround or kOutputMono
     std::string language = "int";  // one of kLanguages
@@ -95,6 +96,7 @@ void ReplayRequest(bool from_pause_menu = false);  // from the menu: leaving ope
 bool ReplayActive();
 void ReplayFrame(X86Context& ctx);  // game thread, the frame's start (cinematic.cpp's hook): records, or plays
 bool ReplayPad(int port, const input::Pad& pad);  // the pad filter: true while the replay has the pad
+bool AutoDriverPad(int port, input::Pad& pad);  // auto driver: fills pad with follow-the-leader steering + full gas when cheat_auto_driver is on
 void DrawReplayHud();                             // inside the ImGui frame: its menu and timeline
 bool ReplayMenuHit(float x, float y);             // screen pixels on its menu, or the results' REPLAY
 bool ReplayStreaming();  // the replay itself sets the streamed place (replay.cpp's 0x235CD0 hook)

@@ -22,6 +22,7 @@ void Pad(int port, input::Pad& pad) {
     const bool camera = !panel && (CinematicPad(port, pad) | ReplayPad(port, pad));  // both see the pad
     if (panel || consumed || camera)
         pad = input::Pad{.connected = pad.connected};
+  if (panel == false) AutoDriverPad(port, pad);
 }
 
 // no vibration while the keyboard and mouse are in use
