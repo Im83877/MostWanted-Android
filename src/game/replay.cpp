@@ -1135,6 +1135,21 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
       if (score < bestScore) { bestScore = score; target = pos; haveTarget = true; }
     }
   }
+  {
+    static Vec prevTarget{0,0,0};
+    static bool havePrevTarget = false;
+    if (haveTarget && havePrevTarget) {
+      Vec vel = target - prevTarget;
+      float vl = Length(vel);
+      if (vl > 0.5f && vl < 50.0f) {
+        Vec vn{vel.x / vl, 0, vel.z / vl};
+        float look = 25.0f;
+        if (bestScore > 100.0f) look = 60.0f;
+        target = Vec{target.x + vn.x * look, target.y, target.z + vn.z * look};
+      }
+    }
+    if (haveTarget) { prevTarget = target; havePrevTarget = true; }
+  }
   if (haveTarget == false) { steer = 0; gas = 255; brake = 0; nos = true; return true; }
   Vec toT = target - myPos;
   float fwdT = Dot(toT, myFwd);
