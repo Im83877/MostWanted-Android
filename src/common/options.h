@@ -95,7 +95,8 @@ bool CinematicMenuHit(float x, float y);             // screen pixels on its men
 void ReplayRequest(bool from_pause_menu = false);  // from the menu: leaving opens the pause menu again
 bool ReplayActive();
 void ReplayFrame(X86Context& ctx);  // game thread, the frame's start (cinematic.cpp's hook): records, or plays
-bool ReplayPad(int port, const input::Pad& pad);  // the pad filter: true while the replay has the pad
+bool ReplayPad(int port, const input::Pad& pad);
+bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos);  // the pad filter: true while the replay has the pad
 bool AutoDriverPad(int port, input::Pad& pad);  // auto driver: fills pad with follow-the-leader steering + full gas when cheat_auto_driver is on
 void DrawReplayHud();                             // inside the ImGui frame: its menu and timeline
 bool ReplayMenuHit(float x, float y);             // screen pixels on its menu, or the results' REPLAY
