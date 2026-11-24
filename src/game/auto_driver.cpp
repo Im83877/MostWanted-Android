@@ -1,10 +1,12 @@
 #include "common/options.h"
 #include "core/input.h"
 
+namespace game {
+
 bool AutoDriverPad(int port, input::Pad& pad) {
   if (port == 0) {
   } else { return false; }
-  if (game::Opt().cheat_auto_driver == false) return false;
+  if (Opt().cheat_auto_driver == false) return false;
   pad.lx = 0;
   pad.ly = 0;
   pad.rx = 0;
@@ -15,3 +17,4 @@ bool AutoDriverPad(int port, input::Pad& pad) {
   pad.connected = true;
   return true;
 }
+} // namespace game
