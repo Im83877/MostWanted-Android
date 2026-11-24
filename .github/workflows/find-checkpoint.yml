@@ -1,0 +1,28 @@
+name: Find Checkpoint
+on: workflow_dispatch
+jobs:
+  find:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Search checkpoint patterns
+        run: |
+          python3 - << 'PYEOF'
+          import pathlib, re
+          root = pathlib.Path("generated/game")
+          files = list(root.glob("*.cpp"))
+          print(f"TOTAL FILES: {len(files)}")
+          hits = []
+          for f in files:
+              t = f.read_text(errors="ignore")
+              floats = re.findall(r"0x[0-9A-Fa-f]{8}", t)
+              if len(floats) > 200:
+                  hits.append((f.name, len(floats), len(t)))
+          hits.sort(key=lambda x: -x[1])
+          print("TOP 20 FILE PALING BANYAK ANGKA:")
+          for h in hits[:20]:
+              print(h)
+          PYEOF
+      - name: List symbols
+        run: |
+          grep -c "X86_FUNC" generated/game/*.cpp | sort -t: -k2 -n -r | head -n 20
