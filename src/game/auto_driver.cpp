@@ -12,8 +12,8 @@ bool AutoDriverPad(int port, input::Pad& pad) {
   bool ok = AutoDriverCompute(steer, gas, brake, nos);
   if (ok == false) {
     steer = 0;
-    gas = 150;
-    brake = 80;
+    gas = 255;
+    brake = 0;
     nos = false;
   }
   if (steer > 1.5f) steer = 1.5f;

@@ -1084,25 +1084,33 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
   Vec cam;
   if (PlayerMiddle(cam) == false) return false;
   Vec myPos{0,0,0};
-  Vec myFwd{0,0,1};
-  Vec myRight{1,0,0};
   bool haveMy = false;
   {
     std::lock_guard lock(g_lock);
+    float bestCam = 1e9f;
     for (auto &kv : g_conns) {
       uint32_t conn = kv.first;
       Mat body = ReadMat(conn + kConnBody);
       Vec pos{body.m[12], body.m[13], body.m[14]};
       float d = Length(pos - cam);
-      if (d < 6.0f) { myPos = pos; myFwd = Vec{body.m[8], body.m[9], body.m[10]}; myRight = Vec{body.m[0], body.m[1], body.m[2]}; haveMy = true; }
+      if (d < bestCam) { bestCam = d; myPos = pos; haveMy = true; }
     }
   }
   if (haveMy == false) return false;
-  float fl = Length(myFwd);
-  if (fl > 0.001f) { myFwd = Vec{myFwd.x / fl, myFwd.y / fl, myFwd.z / fl}; }
-  float rl = Length(myRight);
-  if (rl > 0.001f) { myRight = Vec{myRight.x / rl, myRight.y / rl, myRight.z / rl}; }
-  float best = 1e9f;
+  static Vec prevPos{0,0,0};
+  static Vec prevFwd{0,0,1};
+  static bool havePrev = false;
+  Vec myFwd = prevFwd;
+  if (havePrev) {
+    Vec delta = myPos - prevPos;
+    float dl = Length(delta);
+    if (dl > 0.5f) { myFwd = Vec{delta.x / dl, 0, delta.z / dl}; prevFwd = myFwd; }
+  } else {
+    havePrev = true;
+  }
+  prevPos = myPos;
+  Vec myRight{myFwd.z, 0, -myFwd.x};
+  float bestScore = 1e9f;
   Vec target{0,0,0};
   bool haveTarget = false;
   {
@@ -1112,30 +1120,37 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
       Mat body = ReadMat(conn + kConnBody);
       Vec pos{body.m[12], body.m[13], body.m[14]};
       float dCam = Length(pos - cam);
-      if (dCam < 6.0f) continue;
+      if (dCam < 2.0f) continue;
       Vec to = pos - myPos;
+      float dist = Length(to);
+      if (dist < 3.0f) continue;
+      if (dist > 300.0f) continue;
       float fwd = Dot(to, myFwd);
       float right = Dot(to, myRight);
-      if (fwd < 2.0f) continue;
-      if (fwd > 250.0f) continue;
-      float dist = Length(to);
-      if (dist < best) { best = dist; target = pos; haveTarget = true; }
+      float a = 0.0f;
+      if (fwd > 1.0f) a = right / fwd;
+      if (a < 0) a = -a;
+      float score = dist + a * 40.0f;
+      if (fwd < -5.0f) score += 500.0f;
+      if (score < bestScore) { bestScore = score; target = pos; haveTarget = true; }
     }
   }
-  if (haveTarget == false) return false;
+  if (haveTarget == false) { steer = 0; gas = 255; brake = 0; nos = true; return true; }
   Vec toT = target - myPos;
   float fwdT = Dot(toT, myFwd);
   float rightT = Dot(toT, myRight);
   float ang = 0.0f;
-  if (fwdT > 0.001f) ang = rightT / fwdT;
-  if (ang > 1.5f) ang = 1.5f;
-  if (ang < -1.5f) ang = -1.5f;
-  steer = ang;
+  if (fwdT > 5.0f) ang = rightT / fwdT;
+  else if (fwdT < -5.0f) ang = 0;
+  else ang = rightT * 0.1f;
+  if (ang > 1.0f) ang = 1.0f;
+  if (ang < -1.0f) ang = -1.0f;
+  steer = ang * 0.7f;
   float a = ang;
   if (a < 0) a = -a;
   if (a < 0.15f) { gas = 255; brake = 0; nos = true; }
-  else if (a < 0.5f) { gas = 200; brake = 0; nos = false; }
-  else { gas = 100; brake = 150; nos = false; }
+  else if (a < 0.5f) { gas = 220; brake = 0; nos = false; }
+  else { gas = 160; brake = 40; nos = false; }
   return true;
 }
 bool ReplayPad(int port, const input::Pad& pad) {
