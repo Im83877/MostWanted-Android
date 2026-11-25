@@ -1137,6 +1137,7 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
   }
   {
     static Vec prevTarget{0,0,0};
+  static bool havePrevTarget = false;
   // TAHAP 5 PATHSTATUS TIRUAN - smoothing (nyontek PC PATH_control)
   static Vec smoothTarget{0,0,0};
   static bool haveSmooth = false;
