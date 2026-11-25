@@ -1143,8 +1143,8 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
       float vl = Length(vel);
       if (vl > 0.5f && vl < 50.0f) {
         Vec vn{vel.x / vl, 0, vel.z / vl};
-        float look = 25.0f;
-        if (bestScore > 100.0f) look = 60.0f;
+        float look = 40.0f;
+        if (bestScore > 100.0f) look = 90.0f;
         target = Vec{target.x + vn.x * look, target.y, target.z + vn.z * look};
       }
     }
