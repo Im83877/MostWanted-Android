@@ -1080,6 +1080,7 @@ void ReplayConnUpdated(uint32_t conn) {
 // the pad filter: true while the replay has the pad (or it is still held after leaving)
 // AutoDriverCompute: find my car (closest to camera) + nearest opponent ahead.
 // Returns true if a target was found. steer -1..1, gas/brake 0..255.
+static float GetSpeedLimitEA(float curvature, float top_speed) { float g=9.8f; float f0=0.8f; float f1=0.02f; float gf1=f1*g; float ac=fabsf(curvature); float num=gf1+sqrtf(gf1*gf1+ac*4.0f*g*f0); float den=num/fmaxf(num/fmaxf(0.1f,top_speed),2.0f*ac+0.001f); return den; }
 bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
   Vec cam;
   if (PlayerMiddle(cam) == false) return false;
@@ -1163,9 +1164,9 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
   steer = ang * 0.7f;
   float a = ang;
   if (a < 0) a = -a;
-  if (a < 0.15f) { gas = 255; brake = 0; nos = true; }
-  else if (a < 0.5f) { gas = 220; brake = 0; nos = false; }
-  else { gas = 160; brake = 40; nos = false; }
+  { float mySpeed = Length(myPos - prevPos) * 60.0f; float curv = fabsf(a) / 10.0f; float lim = GetSpeedLimitEA(curv, 90.0f); if (mySpeed > lim + 10.0f) { gas = 160; brake = 60; nos = false; } else if (a < 0.40f) { gas = 255; brake = 0; nos = true; } else { gas = 255; brake = 0; nos = false; } }
+  // line 1168-1169 lama dimatiin - udah pake rumus EA di atas
+  // gas/rem sekarang ngitung dari GetSpeedLimitEA, bukan nebak
   return true;
 }
 bool ReplayPad(int port, const input::Pad& pad) {
