@@ -39,40 +39,25 @@ jobs:
       - name: Search checkpoint in generated
         shell: bash
         run: |
-          echo "=== TOP SUSPECT 25 ==="
-          grep -o "X86_FUNC([^)]*)" generated/game/x86_recomp.25.cpp | head -n 30
-          echo "=== FUNGSI TERPANJANG DI 25 ==="
           python3 - << 'PYEOF'
-          import pathlib, re
+          import pathlib, re, struct
           txt = pathlib.Path("generated/game/x86_recomp.25.cpp").read_text(errors="ignore")
-          parts = re.split(r"X86_FUNC\(", txt)
-          print(f"TOTAL FUNGSI DI 25: {len(parts)}")
-          # cari fungsi yang punya banyak float yang mirip koordinat (3 angka berurutan)
-          scored = []
-          for i, chunk in enumerate(parts):
-              floats = re.findall(r"0x[0-9A-Fa-f]{8}", chunk)
-              if len(floats) > 100:
-                  scored.append((len(floats), chunk[:80].replace(chr(10)," ")))
-          scored.sort(reverse=True)
-          for s in scored[:15]:
-              print(s)
-          PYEOF
-          echo "=== LS ==="
-          ls generated/game | head -n 20
-          echo "TOTAL:"
-          ls generated/game/*.cpp | wc -l
-          python3 - << 'PYEOF'
-          import pathlib, re
-          root = pathlib.Path("generated/game")
-          files = list(root.glob("*.cpp"))
-          print(f"TOTAL FILES: {len(files)}")
-          hits = []
-          for f in files:
-              t = f.read_text(errors="ignore")
-              c = len(re.findall(r"0x[0-9A-Fa-f]{8}", t))
-              hits.append((f.name, c, len(t)))
-          hits.sort(key=lambda x: -x[1])
-          print("TOP 20 FILE PALING BANYAK ANGKA:")
-          for h in hits[:20]:
-              print(h)
+          idx = txt.find("sub_000CDA40")
+          chunk = txt[idx:idx+20000]
+          print(f"CHUNK LEN: {len(chunk)}")
+          print(chunk[:4000])
+          print("---ANGKA HEX---")
+          hexes = re.findall(r"0x[0-9A-Fa-f]{8}", chunk)
+          print(f"TOTAL HEX: {len(hexes)}")
+          # coba jadiin float, liat yang masuk akal buat koordinat map (-2000..2000)
+          vals = []
+          for h in hexes:
+              try:
+                  f = struct.unpack("<f", struct.pack("<I", int(h,16)))[0]
+                  if abs(f) < 5000 and abs(f) > 0.001:
+                      vals.append(round(f,2))
+              except:
+                  pass
+          print(f"FLOAT MASUK AKAL: {len(vals)}")
+          print(vals[:100])
           PYEOF
