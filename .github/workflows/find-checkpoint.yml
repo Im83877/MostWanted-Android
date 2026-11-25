@@ -1,73 +1,16 @@
-name: Find Checkpoint
+name: Find AI EA
 on: workflow_dispatch
 jobs:
   find:
-    runs-on: windows-2025
-    timeout-minutes: 300
-    env:
-      NDK_VERSION: 28.2.13676358
-      CMAKE_VERSION: 3.31.6
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-      - name: Android SDK packages
-        shell: cmd
-        run: call "%ANDROID_HOME%\cmdline-tools\latest\bin\sdkmanager.bat" --install "platforms;android-34" "ndk;%NDK_VERSION%" "cmake;%CMAKE_VERSION%" >nul
-      - name: Decrypt default.xbe
-        shell: bash
-        env:
-          XBE_KEY: ${{ secrets.XBE_KEY }}
+      - uses: actions/checkout@v4
+      - name: Build tools
         run: |
-          if [ -z "$XBE_KEY" ]; then echo "::error::XBE_KEY missing"; exit 1; fi
-          mkdir -p assets
-          key="$RUNNER_TEMP/xbe.key"
-          printf '%s' "$XBE_KEY" | tr -d '\r\n' > "$key"
-          openssl enc -d -aes-256-cbc -md sha256 -pbkdf2 -iter 200000 -in ci/default.xbe.enc -out assets/default.xbe -pass "file:$key"
-          rm -f "$key"
-          sha=$(sha1sum assets/default.xbe | cut -d' ' -f1)
-          echo "default.xbe SHA-1 $sha"
-          if [ "$sha" != "f636a16af04171089f879a4bed646e185c734233" ]; then echo "::error::default.xbe not supported"; exit 1; fi
-      - name: Build tools + Recompile
-        shell: cmd
-        run: call build.bat
-      - name: Search checkpoint in XBE binary
-        shell: bash
+          chmod +x build.sh 2>/dev/null || true
+          ls tools/ 2>&1 | head
+      - name: Search AIActionRace in generated
         run: |
-          ls -lh assets/default.xbe
-          python3 - << 'PYEOF'
-          import struct
-          data = open("assets/default.xbe","rb").read()
-          print(f"XBE SIZE: {len(data)}")
-          # cari 3 float berurutan yang masuk akal buat map: x,z di -5000..5000, y di -100..500
-          # dan beda antar titik tidak terlalu jauh (jalur)
-          hits = 0
-          for i in range(0, len(data)-12, 4):
-              try:
-                  x,y,z = struct.unpack_from("<fff", data, i)
-              except:
-                  continue
-              if abs(x) < 5000 and abs(z) < 5000 and -100 < y < 500:
-                  # cek 3 titik berikutnya juga masuk akal = kemungkinan jalur
-                  ok = True
-                  for j in range(1,4):
-                      try:
-                          x2,y2,z2 = struct.unpack_from("<fff", data, i+j*12)
-                      except:
-                          ok=False; break
-                      if not (abs(x2)<5000 and abs(z2)<5000 and -100<y2<500):
-                          ok=False; break
-                      if abs(x2-x)>500 or abs(z2-z)>500:
-                          ok=False; break
-                  if ok:
-                      print(f"OFFSET {hex(i)}: ({x:.1f},{y:.1f},{z:.1f})")
-                      hits += 1
-                      if hits >= 30:
-                          break
-          print(f"TOTAL HITS: {hits}")
-          PYEOF
+          find . -name "*.cpp" -path "*generated*" | head
+          grep -rn "AIActionRace\|PATH_control\|PathControl" generated/ 2>&1 | head -n 100
+          echo DONE
