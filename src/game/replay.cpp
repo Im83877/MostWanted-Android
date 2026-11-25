@@ -1137,17 +1137,16 @@ bool AutoDriverCompute(float &steer, float &gas, float &brake, bool &nos) {
   }
   {
     static Vec prevTarget{0,0,0};
-    static bool havePrevTarget = false;
-    if (haveTarget && havePrevTarget) {
-      Vec vel = target - prevTarget;
-      float vl = Length(vel);
-      if (vl > 0.5f && vl < 50.0f) {
-        Vec vn{vel.x / vl, 0, vel.z / vl};
-        float look = 40.0f;
-        if (bestScore > 100.0f) look = 90.0f;
-        target = Vec{target.x + vn.x * look, target.y, target.z + vn.z * look};
-      }
-    }
+  // TAHAP 5 PATHSTATUS TIRUAN - smoothing (nyontek PC PATH_control)
+  static Vec smoothTarget{0,0,0};
+  static bool haveSmooth = false;
+  if (haveTarget) {
+    if (!haveSmooth) { smoothTarget = target; haveSmooth = true; }
+    else { Vec d = target - smoothTarget; float dl = Length(d); if (dl > 0.5f && dl < 50.0f) { smoothTarget = Vec{smoothTarget.x + d.x * 0.35f, smoothTarget.y, smoothTarget.z + d.z * 0.35f}; } else if (dl >= 50.0f) { smoothTarget = target; } }
+    Vec vn{0,0,1}; { Vec vv = smoothTarget - prevTarget; float vl = Length(vv); if (vl > 0.5f) vn = Vec{vv.x/vl, 0, vv.z/vl}; }
+    float look = 25.0f;
+    target = Vec{smoothTarget.x + vn.x * look, smoothTarget.y, smoothTarget.z + vn.z * look};
+  }
     if (haveTarget) { prevTarget = target; havePrevTarget = true; }
   }
   if (haveTarget == false) { steer = 0; gas = 255; brake = 0; nos = true; return true; }
