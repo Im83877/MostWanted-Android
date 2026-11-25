@@ -36,28 +36,38 @@ jobs:
       - name: Build tools + Recompile
         shell: cmd
         run: call build.bat
-      - name: Search checkpoint in generated
+      - name: Search checkpoint in XBE binary
         shell: bash
         run: |
+          ls -lh assets/default.xbe
           python3 - << 'PYEOF'
-          import pathlib, re, struct
-          txt = pathlib.Path("generated/game/x86_recomp.25.cpp").read_text(errors="ignore")
-          idx = txt.find("sub_000CDA40")
-          chunk = txt[idx:idx+20000]
-          print(f"CHUNK LEN: {len(chunk)}")
-          print(chunk[:4000])
-          print("---ANGKA HEX---")
-          hexes = re.findall(r"0x[0-9A-Fa-f]{8}", chunk)
-          print(f"TOTAL HEX: {len(hexes)}")
-          # coba jadiin float, liat yang masuk akal buat koordinat map (-2000..2000)
-          vals = []
-          for h in hexes:
+          import struct
+          data = open("assets/default.xbe","rb").read()
+          print(f"XBE SIZE: {len(data)}")
+          # cari 3 float berurutan yang masuk akal buat map: x,z di -5000..5000, y di -100..500
+          # dan beda antar titik tidak terlalu jauh (jalur)
+          hits = 0
+          for i in range(0, len(data)-12, 4):
               try:
-                  f = struct.unpack("<f", struct.pack("<I", int(h,16)))[0]
-                  if abs(f) < 5000 and abs(f) > 0.001:
-                      vals.append(round(f,2))
+                  x,y,z = struct.unpack_from("<fff", data, i)
               except:
-                  pass
-          print(f"FLOAT MASUK AKAL: {len(vals)}")
-          print(vals[:100])
+                  continue
+              if abs(x) < 5000 and abs(z) < 5000 and -100 < y < 500:
+                  # cek 3 titik berikutnya juga masuk akal = kemungkinan jalur
+                  ok = True
+                  for j in range(1,4):
+                      try:
+                          x2,y2,z2 = struct.unpack_from("<fff", data, i+j*12)
+                      except:
+                          ok=False; break
+                      if not (abs(x2)<5000 and abs(z2)<5000 and -100<y2<500):
+                          ok=False; break
+                      if abs(x2-x)>500 or abs(z2-z)>500:
+                          ok=False; break
+                  if ok:
+                      print(f"OFFSET {hex(i)}: ({x:.1f},{y:.1f},{z:.1f})")
+                      hits += 1
+                      if hits >= 30:
+                          break
+          print(f"TOTAL HITS: {hits}")
           PYEOF
